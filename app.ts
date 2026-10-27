@@ -21,7 +21,7 @@ class JaApp extends Homey.App {
         this.homey.settings.on('set', async key => {
             this.log('Settings change: ' + key);
             if (key === 'username' || key === 'password') {
-                this.credentials?.refresh();
+                this.client?.resetSession();
             }
         });
     }

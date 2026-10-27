@@ -18,13 +18,17 @@
   },
   "error": {
     "unsupportedAction": "Unsupported action",
-    "noPin": "No PIN defined. Cannot control arming state.",
-    "unableToChangeState": "Unable to change arming state."
+    "noPin": "No PIN defined in the app settings. Cannot control arming state.",
+    "unableToChangeState": "Unable to change arming state.",
+    "cannotControl": "You cannot control this section.",
+    "partialArmNotEnabled": "Partial arming is not enabled for this section.",
+    "communication": "Cannot communicate with Jablotron.",
+    "notInitialized": "Jablotron client is not initialized."
   },
   "modes": {
     "disarmed": "Disarmed",
     "armed": "Armed",
-    "partiallyarmed": "Partially Armed"
+    "partially_armed": "Partially Armed"
   },
   "notification": {
     "stateChanged": "**__name__** has been __state__."

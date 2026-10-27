@@ -6,15 +6,21 @@ import {DeviceData, JaApp} from "../../types";
 import {AlarmDevice} from "./device";
 
 export class Ja100 extends Homey.Driver implements Ja100 {
-    private pollingInterval: number = 30;
+    static readonly DEFAULT_POLLING_INTERVAL = 30;
+    static readonly MIN_POLLING_INTERVAL = 15;
+
+    private pollingInterval: number = Ja100.DEFAULT_POLLING_INTERVAL;
     private interval: any;
+    private isSyncing: boolean = false;
 
     private client: JablotronClient | undefined;
 
     async onInit() {
+        this.client = (<JaApp>this.homey.app).client;
+
         this.ready()
             .then(() => {
-                this.pollingInterval = this.homey.settings.get('polling') || 30;
+                this.pollingInterval = this.readPollingInterval();
 
                 this.sync();
                 this.schedule();
@@ -22,12 +28,10 @@ export class Ja100 extends Homey.Driver implements Ja100 {
 
         this.homey.settings.on('set', async (key) => {
             if (key === 'polling') {
-                this.pollingInterval = this.homey.settings.get('polling');
+                this.pollingInterval = this.readPollingInterval();
                 this.schedule();
             }
         });
-
-        this.client = (<JaApp>this.homey.app).client;
 
         this.homey.flow.getActionCard('force_sync')
             .registerRunListener(async (args: any, state: any) => {
@@ -36,46 +40,26 @@ export class Ja100 extends Homey.Driver implements Ja100 {
     }
 
     async onPair(session: PairSession) {
-        let username = "";
-        let password = "";
-
         const credentials = (<JaApp>this.homey.app).credentials as CredentialsManager;
+
         session.setHandler('showView', async (view) => {
-            if (view === 'login_credentials') {
-                if (credentials.has()) {
-                    this.log('Credentials are set, skipping login.')
-                    return session.showView('list_devices');
+            if (view === 'login_credentials' && credentials.has()) {
+                const stored = credentials.get();
+
+                // Skip the login only if the stored credentials still work.
+                if (await this.getClient().authorize(stored.username, stored.password)) {
+                    this.log('Stored credentials are valid, skipping login.');
+                    await session.showView('list_devices');
+                } else {
+                    this.log('Stored credentials are invalid, asking for new ones.');
                 }
-
-                return session;
             }
         });
 
-        session.setHandler("login", async (data) => {
-            username = data.username;
-            password = data.password;
-
-            if (this.client === undefined) {
-                throw Error('Client is not initialized.');
-            }
-
-            const isValid = await this.client.authorize(username, password);
-
-            if (!isValid) {
-                return isValid;
-            }
-
-            credentials.set(username, password);
-
-            return isValid;
-        });
+        session.setHandler("login", async (data) => this.login(data.username, data.password));
 
         session.setHandler("list_devices", async () => {
-            if (this.client === undefined) {
-                throw Error('Client is not initialized.');
-            }
-
-            const sections = await this.client.sections();
+            const sections = await this.getClient().sections();
 
             return sections['data']['sections'].map((section) => {
                 return {
@@ -91,20 +75,33 @@ export class Ja100 extends Homey.Driver implements Ja100 {
         });
     }
 
-    async controlSection(control: ComponentState) {
-        if (this.client === undefined) {
-            throw Error('Client is not initialized.');
+    async onRepair(session: PairSession, device: Homey.Device) {
+        session.setHandler("login", async (data) => {
+            const isValid = await this.login(data.username, data.password);
+
+            if (isValid) {
+                await this.sync();
+                await session.done();
+            }
+
+            return isValid;
+        });
+    }
+
+    async controlSection(control: ComponentState, needsAuthorization: boolean = true) {
+        let pin: string | undefined;
+
+        if (needsAuthorization) {
+            pin = this.homey.settings.get('pin');
+
+            if (pin === null || pin === undefined || pin === '') {
+                this.error('No PIN defined. Cannot control arming state.');
+
+                throw Error(this.homey.__('error.noPin'));
+            }
         }
 
-        const pin = this.homey.settings.get('pin');
-
-        if (pin === null || pin === undefined || pin === '') {
-            this.error(this.homey.__('error.noPinDefined'));
-
-            throw Error('No PIN defined. Cannot control arming state.');
-        }
-
-        return this.client.controlSections([control], pin)
+        return this.getClient().controlSections([control], pin)
             .then(states => {
                 return states.data.states.map((state: ComponentState) => {
                     return <CloudComponentState>{
@@ -123,11 +120,15 @@ export class Ja100 extends Homey.Driver implements Ja100 {
             return true;
         }
 
+        if (this.isSyncing) {
+            this.log('Previous synchronization still running, skipping.');
+            return true;
+        }
+
+        this.isSyncing = true;
         this.log('Synchronizing alarm states.');
-        const app = <JaApp>this.homey.app;
-        const client = <JablotronClient>app.client;
         try {
-            const sections = await client.sections();
+            const sections = await this.getClient().sections();
 
             this.updateComponentStates(sections['data']['states']);
 
@@ -137,11 +138,43 @@ export class Ja100 extends Homey.Driver implements Ja100 {
             this.error('Unable to sync states due to ' + e);
 
             devices.forEach(async (device: AlarmDevice) => {
-                device.setUnavailable('Cannot communicate with Jablotron.');
+                device.setUnavailable(this.homey.__('error.communication'));
             });
 
             return false
         }
+        finally {
+            this.isSyncing = false;
+        }
+    }
+
+    private getClient(): JablotronClient {
+        if (this.client === undefined) {
+            throw Error(this.homey.__('error.notInitialized'));
+        }
+
+        return this.client;
+    }
+
+    private async login(username: string, password: string): Promise<boolean> {
+        const isValid = await this.getClient().authorize(username, password);
+
+        if (isValid) {
+            const credentials = (<JaApp>this.homey.app).credentials as CredentialsManager;
+            credentials.set(username, password);
+        }
+
+        return isValid;
+    }
+
+    private readPollingInterval(): number {
+        const value = parseInt(this.homey.settings.get('polling'), 10);
+
+        if (isNaN(value)) {
+            return Ja100.DEFAULT_POLLING_INTERVAL;
+        }
+
+        return Math.max(Ja100.MIN_POLLING_INTERVAL, value);
     }
 
     private schedule() {
@@ -153,6 +186,17 @@ export class Ja100 extends Homey.Driver implements Ja100 {
         this.log("Using an update interval of " + this.pollingInterval + " sec.");
 
         this.interval = this.homey.setInterval(this.sync.bind(this), this.pollingInterval * 1000);
+    }
+
+    private static toHomeyState(state: ALARM_STATE | undefined): string {
+        switch (state) {
+            case ALARM_STATE.ARM:
+                return 'armed';
+            case ALARM_STATE.PARTIAL_ARM:
+                return 'partially_armed';
+            default:
+                return 'disarmed';
+        }
     }
 
     private updateComponentStates(states: CloudComponentState[]) {
@@ -185,7 +229,7 @@ export class Ja100 extends Homey.Driver implements Ja100 {
 
             try {
                 const stateObj = statesMap.get(deviceId);
-                const state = stateObj?.state === ALARM_STATE.ARM ? 'armed' : 'disarmed';
+                const state = Ja100.toHomeyState(stateObj?.state);
 
                 device.updateState(state);
             } catch (error) {

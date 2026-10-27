@@ -1,16 +1,1 @@
-{
-  "triggers": [
-    {
-      "id": "homealarm_state_changed",
-      "title": { "en": "The state changed" },
-      "tokens": [
-        {
-          "name": "homealarm_state",
-          "type": "string",
-          "title": { "en": "State"},
-          "example": "armed"
-        }
-      ]
-    }
-  ]
-}
+{}

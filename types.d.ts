@@ -1,4 +1,4 @@
-import {ALARM_STATE, CloudComponentState, JablotronClient} from "./lib/JablotronClient";
+import {JablotronClient} from "./lib/JablotronClient";
 import {CredentialsManager} from "./lib/CredentialsManager";
 import Homey from "homey";
 

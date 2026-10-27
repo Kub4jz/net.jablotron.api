@@ -27,11 +27,4 @@ export class CredentialsManager {
 
         return settingsKeys.includes(CredentialsManager.SETTINGS_USERNAME) && settingsKeys.includes(CredentialsManager.SETTINGS_PASSWORD);
     }
-
-    refresh(): void {
-        this.set(
-            this.settings.get(CredentialsManager.SETTINGS_USERNAME),
-            this.settings.get(CredentialsManager.SETTINGS_PASSWORD),
-        )
-    }
 }

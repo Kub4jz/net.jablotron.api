@@ -39,31 +39,6 @@
         "args": [],
         "id": "force_sync"
       }
-    ],
-    "triggers": [
-      {
-        "id": "homealarm_state_changed",
-        "title": {
-          "en": "The state changed"
-        },
-        "tokens": [
-          {
-            "name": "homealarm_state",
-            "type": "string",
-            "title": {
-              "en": "State"
-            },
-            "example": "armed"
-          }
-        ],
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=alarm"
-          }
-        ]
-      }
     ]
   },
   "drivers": [
@@ -102,6 +77,22 @@
                 "da": "Aktiveret",
                 "pl": "Uzbrojony",
                 "ko": "경보 활성화됨"
+              }
+            },
+            {
+              "id": "partially_armed",
+              "title": {
+                "en": "Partially armed",
+                "nl": "Deels geactiveerd",
+                "de": "Teilweise scharf",
+                "fr": "Partiellement armé",
+                "it": "Parzialmente attivato",
+                "sv": "Delvis larmat",
+                "no": "Delvis aktivert",
+                "es": "Parcialmente activada",
+                "da": "Delvist aktiveret",
+                "pl": "Częściowo uzbrojony",
+                "ko": "부분 경보 활성화됨"
               }
             },
             {
@@ -144,6 +135,18 @@
         {
           "id": "add_devices",
           "template": "add_devices"
+        }
+      ],
+      "repair": [
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "logo": "logo.png",
+            "title": {
+              "en": "Log in with your credentials"
+            }
+          }
         }
       ],
       "id": "alarm"
