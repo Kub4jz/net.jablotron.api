@@ -1,0 +1,8 @@
+{
+  "0.0.3": {
+    "en": "Initial version"
+  },
+  "0.0.4": {
+    "en": "Optimized app size, added force server sync flow card"
+  }
+}

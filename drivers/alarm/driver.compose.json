@@ -1,0 +1,80 @@
+{
+  "name": {
+    "en": "Alarm Section"
+  },
+  "images": {
+    "small": "/drivers/alarm/assets/images/small.png",
+    "large": "/drivers/alarm/assets/images/large.png"
+  },
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "cloud"
+  ],
+  "class": "homealarm",
+  "capabilities": [
+    "homealarm_state"
+  ],
+  "capabilitiesOptions": {
+    "homealarm_state": {
+      "values": [
+        {
+          "id": "armed",
+          "title": {
+            "en": "Armed",
+            "nl": "Geactiveerd",
+            "de": "scharf",
+            "fr": "Armé",
+            "it": "Attivato",
+            "sv": "Larmat",
+            "no": "Aktivert",
+            "es": "Activada",
+            "da": "Aktiveret",
+            "pl": "Uzbrojony",
+            "ko": "경보 활성화됨"
+          }
+        },
+        {
+          "id": "disarmed",
+          "title": {
+            "en": "Disarmed",
+            "nl": "Gedeactiveerd",
+            "de": "unscharf",
+            "fr": "Désarmé",
+            "it": "Disattivato",
+            "sv": "Avlarmat",
+            "no": "Deaktivert",
+            "es": "Desactivada",
+            "da": "Deaktiveret",
+            "pl": "rozbrojony",
+            "ko": "경보 해제됨"
+          }
+        }
+      ]
+    }
+  },
+  "pair": [
+    {
+      "id": "login_credentials",
+      "template": "login_credentials",
+      "options": {
+        "logo": "logo.png",
+        "title": {
+          "en": "Log in with your credentials"
+        }
+      }
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": {
+        "next": "add_devices"
+      }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ]
+}
