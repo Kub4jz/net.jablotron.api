@@ -4,6 +4,7 @@ import {CredentialsManager} from "../../lib/CredentialsManager";
 import PairSession from "homey/lib/PairSession";
 import {DeviceData, JaApp} from "../../types";
 import {AlarmDevice} from "./device";
+import {SectionControlBatcher} from "../../lib/SectionControlBatcher";
 
 export class Ja100 extends Homey.Driver implements Ja100 {
     static readonly DEFAULT_POLLING_INTERVAL = 30;
@@ -14,9 +15,16 @@ export class Ja100 extends Homey.Driver implements Ja100 {
     private isSyncing: boolean = false;
 
     private client: JablotronClient | undefined;
+    private batcher: SectionControlBatcher<void> | undefined;
 
     async onInit() {
         this.client = (<JaApp>this.homey.app).client;
+
+        // Commands received within 500 ms are sent as one request.
+        this.batcher = new SectionControlBatcher(
+            (controls, needsAuthorization) => this.sendSectionControls(controls, needsAuthorization),
+            ms => new Promise(resolve => this.homey.setTimeout(resolve, ms)),
+        );
 
         this.ready()
             .then(() => {
@@ -89,19 +97,23 @@ export class Ja100 extends Homey.Driver implements Ja100 {
     }
 
     async controlSection(control: ComponentState, needsAuthorization: boolean = true) {
-        let pin: string | undefined;
-
         if (needsAuthorization) {
-            pin = this.homey.settings.get('pin');
-
-            if (pin === null || pin === undefined || pin === '') {
-                this.error('No PIN defined. Cannot control arming state.');
-
-                throw Error(this.homey.__('error.noPin'));
-            }
+            // Fail right away instead of after the batching window.
+            this.getPin();
         }
 
-        return this.getClient().controlSections([control], pin)
+        if (this.batcher === undefined) {
+            throw Error(this.homey.__('error.notInitialized'));
+        }
+
+        return this.batcher.control(control, needsAuthorization);
+    }
+
+    /** One request for the whole batch; the PIN is sent if at least one section needs it. */
+    private async sendSectionControls(controls: ComponentState[], needsAuthorization: boolean) {
+        const pin = needsAuthorization ? this.getPin() : undefined;
+
+        return this.getClient().controlSections(controls, pin)
             .then(states => {
                 return states.data.states.map((state: ComponentState) => {
                     return <CloudComponentState>{
@@ -111,6 +123,18 @@ export class Ja100 extends Homey.Driver implements Ja100 {
                 })
             })
             .then((states: CloudComponentState[]) => this.updateComponentStates(states));
+    }
+
+    private getPin(): string {
+        const pin = this.homey.settings.get('pin');
+
+        if (pin === null || pin === undefined || pin === '') {
+            this.error('No PIN defined. Cannot control arming state.');
+
+            throw Error(this.homey.__('error.noPin'));
+        }
+
+        return pin;
     }
 
     async sync() {
