@@ -4,5 +4,8 @@
   },
   "0.0.4": {
     "en": "Optimized app size, added force server sync flow card"
+  },
+  "0.0.5": {
+    "en": "Code optimizations"
   }
 }
