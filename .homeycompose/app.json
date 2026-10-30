@@ -25,5 +25,9 @@
   "author": {
     "name": "Jakub H.",
     "email": "kub4jz@gmail.com"
+  },
+  "source": "https://github.com/Kub4jz/net.jablotron.api",
+  "bugs": {
+    "url": "https://github.com/Kub4jz/net.jablotron.api/issues"
   }
 }
