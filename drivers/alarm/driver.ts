@@ -9,6 +9,7 @@ import {SectionControlBatcher} from "../../lib/SectionControlBatcher";
 export class Ja100 extends Homey.Driver implements Ja100 {
     static readonly DEFAULT_POLLING_INTERVAL = 30;
     static readonly MIN_POLLING_INTERVAL = 15;
+    static readonly CREDENTIALS_CHANGE_SYNC_DELAY = 5;
 
     private pollingInterval: number = Ja100.DEFAULT_POLLING_INTERVAL;
     private interval: any;
@@ -38,6 +39,15 @@ export class Ja100 extends Homey.Driver implements Ja100 {
             if (key === 'polling') {
                 this.pollingInterval = this.readPollingInterval();
                 this.schedule();
+            }
+
+            if (key === CredentialsManager.SETTINGS_PASSWORD || key === CredentialsManager.SETTINGS_PIN) {
+                this.log(`Setting "${key}" changed, next synchronization in ${Ja100.CREDENTIALS_CHANGE_SYNC_DELAY} sec.`);
+                this.homey.clearInterval(this.interval);
+                this.homey.setTimeout(() => {
+                    this.sync();
+                    this.schedule();
+                }, Ja100.CREDENTIALS_CHANGE_SYNC_DELAY * 1000);
             }
         });
 
@@ -126,9 +136,10 @@ export class Ja100 extends Homey.Driver implements Ja100 {
     }
 
     private getPin(): string {
-        const pin = this.homey.settings.get('pin');
+        const credentials = (<JaApp>this.homey.app).credentials as CredentialsManager;
+        const pin = credentials.getPin();
 
-        if (pin === null || pin === undefined || pin === '') {
+        if (pin === null) {
             this.error('No PIN defined. Cannot control arming state.');
 
             throw Error(this.homey.__('error.noPin'));

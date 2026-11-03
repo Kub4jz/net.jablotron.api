@@ -151,5 +151,15 @@
       ],
       "id": "alarm"
     }
-  ]
+  ],
+  "api": {
+    "getSettings": {
+      "method": "GET",
+      "path": "/settings"
+    },
+    "updateSettings": {
+      "method": "PUT",
+      "path": "/settings"
+    }
+  }
 }

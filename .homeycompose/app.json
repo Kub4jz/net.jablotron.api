@@ -29,5 +29,15 @@
   "source": "https://github.com/Kub4jz/net.jablotron.api",
   "bugs": {
     "url": "https://github.com/Kub4jz/net.jablotron.api/issues"
+  },
+  "api": {
+    "getSettings": {
+      "method": "GET",
+      "path": "/settings"
+    },
+    "updateSettings": {
+      "method": "PUT",
+      "path": "/settings"
+    }
   }
 }

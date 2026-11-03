@@ -12,7 +12,8 @@ class JaApp extends Homey.App {
     async onInit() {
         this.log('JaApp initialized...');
 
-        this.credentials = new CredentialsManager(this.homey.settings);
+        this.credentials = new CredentialsManager(this.homey.settings, (...args) => this.error(...args));
+        await this.credentials.init(await this.homey.cloud.getHomeyId());
         this.client = new JablotronClient(this.credentials);
 
         this.client.on('log', (...args) => this.log(...args));
@@ -20,7 +21,7 @@ class JaApp extends Homey.App {
 
         this.homey.settings.on('set', async key => {
             this.log('Settings change: ' + key);
-            if (key === 'username' || key === 'password') {
+            if (key === CredentialsManager.SETTINGS_USERNAME || key === CredentialsManager.SETTINGS_PASSWORD) {
                 this.client?.resetSession();
             }
         });
