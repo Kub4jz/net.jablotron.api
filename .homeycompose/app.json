@@ -1,6 +1,6 @@
 {
   "id": "net.jablotron.api",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "compatibility": ">=12.9.0",
   "sdk": 3,
   "brandColor": "#fab800",
@@ -11,7 +11,7 @@
     "en": "Jablotron Cloud"
   },
   "description": {
-    "en": "Adds support for Jablotron JA100 alarm using MyJablotron web service."
+    "en": "Arm, disarm and keep an eye on your Jablotron alarm."
   },
   "category": [
     "security"

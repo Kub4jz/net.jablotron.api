@@ -8,7 +8,8 @@
     "build": "tsc",
     "homey:build": "homey app build",
     "homey:run": "homey app run",
-    "homey:install": "homey app install"
+    "homey:install": "homey app install",
+    "homey:publish": "homey app publish"
   },
   "dependencies": {
     "source-map-support": "0.5.21"
